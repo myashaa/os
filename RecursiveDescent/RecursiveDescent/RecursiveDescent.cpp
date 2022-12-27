@@ -1,133 +1,259 @@
-﻿#include <string>
-#include <fstream>
+﻿#include <fstream>
+#include <stack>
+#include <algorithm>
+
+#include "Exceptions.h"
 
 using namespace std;
 
 // Вспомогательные методы +
 
+void ToLower(string& str)
+{
+	transform(str.begin(), str.end(), str.begin(), [](unsigned char ch) {return tolower(ch);});
+}
+
 void RemoveExtraSpaces(string& str)
 {
-	size_t begin = str.find_first_not_of(" ");
-	size_t length = str.find_last_not_of(" ") - begin;
+	size_t begin = str.find_first_not_of(SPACE);
+	size_t length = str.find_last_not_of(SPACE) - begin;
+
+	if (begin == str.npos)
+	{
+		begin = 0;
+	}
 
 	str = str.substr(begin, length + 1);
 }
 
+void RemoveExtraBrackets(string& str)
+{
+	stack<char> brackets;
+
+	string result;
+
+	for (size_t i = 0; i < str.length(); i++)
+	{
+		bool add = true;
+
+		if (str[i] == OPEN_BRACKET)
+		{
+			brackets.push(str[i]);
+		}
+		if (str[i] == CLOSE_BRACKET)
+		{
+			if (brackets.empty())
+			{
+				add = false;
+			}
+			else
+			{
+				brackets.pop();
+			}
+		}
+
+		if (add)
+		{
+			result = result + str[i];
+		}
+	}
+
+	str = result;
+}
+
+bool CorrectBrackets(string const& str, string& errorMessage)
+{
+	stack<char> brackets;
+
+	for (size_t i = 0; i < str.length(); i++)
+	{
+		if (str[i] == OPEN_BRACKET)
+		{
+			brackets.push(str[i]);
+		}
+		if (str[i] == CLOSE_BRACKET)
+		{
+			if (brackets.empty())
+			{
+				errorMessage = Errors[OPEN_BRACKET_STR];
+				return false;
+			}
+
+			brackets.pop();
+		}
+	}
+
+	if (!brackets.empty())
+	{
+		errorMessage = Errors[CLOSE_BRACKET_STR];
+	}
+
+	return brackets.empty();
+}
+
 string GetSubstring(string const& str, string const& separartor)
 {
-	string result = str.substr(0, str.find(separartor) + 1);
+	string result = str.substr(0, str.find(separartor));
 
 	RemoveExtraSpaces(result);
 
 	return result;
 }
 
-void ReadLine(ifstream& input, string& str)
+bool ReadLine(ifstream& input, string& str)
 {
-	str = "";
+	str = EMPTY_STR;
 
 	if (!input.eof())
 	{
 		getline(input, str);
 	}
+
+	ToLower(str);
+	RemoveExtraSpaces(str);
+
+	return !str.empty();
+}
+
+bool OperationHaveOpenBracket(string const& str, string const& operation)
+{
+	bool haveOpenBracket = true;
+
+	string lex = str.substr(0, operation.length() + 1);
+	if (lex != operation + OPEN_BRACKET_STR)
+	{
+		haveOpenBracket = false;
+	}
+
+	return haveOpenBracket;
 }
 
 // Вспомогательные методы -
-bool EXPLexer(string& str);
 
+bool EXPLexer(string& str, string& errorMessage);
 
 // <TYPE> -> int | float | bool | string
-bool TypeLexer(string& str)
+bool TypeLexer(string& str, string& errorMessage)
 {
+	if (str.find(SEMICOLON) != str.npos)
+	{
+		str = GetSubstring(str, SEMICOLON);
+	}
+	else
+	{
+		errorMessage = Errors[SEMICOLON];
+		return false;
+	}
+
 	bool result = false;
 
-	//string lex = GetSubstring(str, ";");
-	str = str.substr(0, str.length() - 1);
-
-	if (str == "int" || str == "float" || str == "bool" || str == "string")
+	if (str == INT || str == FLOAT || str == BOOL || str == STRING)
 	{
 		result = true;
 	}
+	else
+	{
+		errorMessage = Errors[DATA_TYPE];
+	}
 
-	str = "";
-	//str = str.substr(lex.length());
+	str = EMPTY_STR;
 
 	return result;
 }
 
 // <IDLIST> -> id | <IDLIST>, id
-bool IDListLexer(string& str)
+bool IDListLexer(string& str, string& errorMessage)
 {
 	RemoveExtraSpaces(str);
 
-	if (str == "id")
+	if (str == ID)
 	{
 		return true;
 	}
 
 	bool result = false;
 
-	string lex = GetSubstring(str, " ");
-	if (lex == "id,")
+	string lex = GetSubstring(str, SPACE);
+	if (lex == MANY_ID)
 	{
 		str = str.substr(lex.length());
-		result = IDListLexer(str);
+		result = IDListLexer(str, errorMessage);
+	}
+	else
+	{
+		if (lex == ID)
+		{
+			errorMessage = Errors[COMMA];
+		}
+		else
+		{
+			errorMessage = Errors[ID];
+		}
+	}
+
+	return result;
+}
+
+bool OperationLexer(string const& operation, string& str, string& errorMessage)
+{
+	bool result = false;
+
+	string lex = GetSubstring(str, OPEN_BRACKET_STR);
+
+	if (lex == operation)
+	{
+		// Проверяем, что следующий символ - открывающая скобка.
+		if (!OperationHaveOpenBracket(str, lex))
+		{
+			errorMessage = Errors[OPEN_BRACKET_STR];
+			return false;
+		}
+
+		str = str.substr(lex.length() + 1);
+
+		// Если закрывающей скобки не обнаружено, выбрасываем ошибку.
+		if (str.find(CLOSE_BRACKET_STR) == str.npos)
+		{
+			errorMessage = Errors[CLOSE_BRACKET_STR];
+			return false;
+		}
+
+		lex = GetSubstring(str, CLOSE_BRACKET_STR);
+
+		result = IDListLexer(lex, errorMessage);
+
+		if (result == true)
+		{
+			str = str.substr(str.find(CLOSE_BRACKET_STR));
+
+			// Если после закрывающей скобки есть что-то кроме ';' выкидываем ошибку.
+			if (str.length() > 1)
+			{
+				errorMessage = Errors[SEMICOLON];
+				result = false;
+			}
+		}
 	}
 
 	return result;
 }
 
 //<WRITE> -> WRITE(<IDLIST>);
-bool WriteLexer(string& str)
+bool WriteLexer(string& str, string& errorMessage)
 {
-	bool result = false;
-
-	string lex = GetSubstring(str, "(");
-
-	if (lex == "WRITE(")
-	{
-		str.substr(lex.length());
-
-		result = IDListLexer(str);
-
-		if (result == true)
-		{
-			result = (str[0] == ')');
-		}
-	}
-
-	return result;
+	return OperationLexer(WRITE, str, errorMessage);
 }
 
 // <READ> -> READ(<IDLIST>);
-bool ReadLexer(string& str)
+bool ReadLexer(string& str, string& errorMessage)
 {
-	bool result = false;
-
-	string lex = GetSubstring(str, "(");
-
-	if (lex == "READ(")
-	{
-		str = str.substr(lex.length());
-
-		lex = str.substr(0, str.find(")"));
-
-		result = IDListLexer(lex);
-
-		if (result == true)
-		{
-			str = str.substr(str.find(")"));
-			//result = (str[0] == ')');
-		}
-	}
-
-	return result;
+	return OperationLexer(READ, str, errorMessage);
 }
 
 // <F> -> -<F> | (<EXP>) | id | num
-bool FLexer(string& str)
+bool FLexer(string& str, string& errorMessage)
 {
-	if (str == "id" || str == "num")
+	if (str == ID || str == NUM)
 	{
 		return true;
 	}
@@ -135,70 +261,80 @@ bool FLexer(string& str)
 	bool result = false;
 
 	string lex = str.substr(0, 1);
-	if (lex == "(")
+	if (lex == OPEN_BRACKET_STR)
 	{
-		str.substr(lex.length());
-		result = EXPLexer(str);
+		// Открываем скобки.
+		str = str.substr(lex.length());
+		RemoveExtraBrackets(str);
 
-		if (result)
-		{
-			result = (str[0] == ')');
-		}
-
-		str = str.substr(1);
+		result = EXPLexer(str, errorMessage);
 	}
-	else if (lex == "-")
+	else if (lex == MINUS)
 	{
-		str.substr(lex.length());
-		result = FLexer(str);
+		str = str.substr(lex.length());
+
+		result = FLexer(str, errorMessage);
+	}
+
+	if (result == false)
+	{
+		errorMessage = Errors[UNKNOWN_EXPRESSION];
 	}
 
 	return result;
 }
 
-// TODO: Дописать, проверить работоспособность. Сначала <F>, потом <T>*<F>
 // <T> -> <T>*<F> | <F>
-bool TLexer(string& str)
+bool TLexer(string& str, string& errorMessage)
 {
 	bool result = false;
 
+	RemoveExtraSpaces(str);
+
 	string lex = str;
-	if (FLexer(lex))
+	if (FLexer(lex, errorMessage))
 	{
+		str = EMPTY_STR;
 		result = true;
 	}
 	else
 	{
-		lex = GetSubstring(str, "*");
-		if (FLexer(lex))
+		// Разделить по '*'.
+		lex = GetSubstring(str, MULTIPLY);
+
+		if (FLexer(lex, errorMessage))
 		{
-			str.substr(lex.length());
-			result = TLexer(str);
+			str = str.substr(str.find(MULTIPLY) + 1);
+
+			result = EXPLexer(str, errorMessage);
 		}
 	}
 
 	return result;
 }
 
-// TODO: Дописать, нужно как то разбить строку для корректной обработки.
 // <EXP> ->  <EXP> + <T> | <T>
-bool EXPLexer(string& str)
+bool EXPLexer(string& str, string& errorMessage)
 {
 	bool result = false;
 
+	RemoveExtraSpaces(str);
+
 	string lex = str;
-	if (TLexer(lex))
+	if (TLexer(lex, errorMessage))
 	{
+		str = EMPTY_STR;
 		result = true;
 	}
 	else
 	{
-		// Разделить по "+"
-		lex = GetSubstring(str, "+");
-		if (TLexer(lex))
+		// Разделить по '+'.
+		lex = GetSubstring(str, PLUS);
+
+		if (TLexer(lex, errorMessage))
 		{
-			str.substr(lex.length());
-			result = EXPLexer(str);
+			str = str.substr(str.find(PLUS) + 1);
+			result = EXPLexer(str, errorMessage);
 		}
 	}
 
@@ -206,116 +342,177 @@ bool EXPLexer(string& str)
 }
 
 // <ASSIGN> -> id := <EXP> ;
-bool AssignLexer(string& str)
+bool AssignLexer(string& str, string& errorMessage)
 {
+	if (str.find(EQUAL) == str.npos)
+	{
+		return false;
+	}
+
+	string lex = GetSubstring(str, EQUAL);
+
+	if (lex != ID)
+	{
+		errorMessage = Errors[ID];
+		return false;
+	}
+
 	bool result = false;
 
-	string lex = GetSubstring(str, ":=");
+	lex = str.substr(0, lex.length() + 3);
+	RemoveExtraSpaces(lex);
 
-	if (lex == "id :=")
+	if (lex == ID_EQUAL)
 	{
 		str = str.substr(lex.length());
 
-		result = EXPLexer(str);
+		if (CorrectBrackets(str, errorMessage))
+		{
+			result = EXPLexer(str, errorMessage);
+		}
+	}
+	else
+	{
+		errorMessage = Errors[EQUAL];
+	}
+
+	if (result == true)
+	{
+		errorMessage = "";
 	}
 
 	return result;
 }
 
 // <ST> -> <READ> | <WRITE> | <ASSIGN>
-bool STLexer(string const& str)
+bool STLexer(string const& str, string& errorMessage)
 {
 	string lex = str;
-	if (ReadLexer(lex))
+	if (ReadLexer(lex, errorMessage))
 	{
 		return true;
 	}
 
 	lex = str;
-	if (WriteLexer(lex))
+	if (WriteLexer(lex, errorMessage))
 	{
 		return true;
 	}
 
 	lex = str;
-	if (AssignLexer(lex))
+	if (AssignLexer(lex, errorMessage))
 	{
 		return true;
+	}
+
+	if (errorMessage.empty())
+	{
+		errorMessage = Errors[UNKNOWN_FUNCTION];
 	}
 
 	return false;
 }
 
 // <LISTST> -> <ST> | <LISTST> <ST>
-bool ListSTLexer(ifstream& input)
+bool ListSTLexer(ifstream& input, string& str, string& errorMessage)
 {
-	bool result = false;
+	unsigned operationCount = 0;
 
-	string str;
-	while (getline(input, str) && str != "END")
+	while (ReadLine(input, str))
 	{
-		result = STLexer(str);
-
-		if (!result)
+		if (str == END)
 		{
-			break;
+			if (operationCount > 0)
+			{
+				return true;
+			}
+
+			errorMessage = Errors[FUNCTIONS];
+			return false;
+		}
+
+		if (str.find(SEMICOLON) == str.npos)
+		{
+			errorMessage = Errors[SEMICOLON];
+			return false;
+		}
+
+		operationCount++;
+
+		str = str.substr(0, str.find(SEMICOLON));
+
+		if (STLexer(str, errorMessage) == false)
+		{
+			return false;
 		}
 	}
 
-	return result;
+	return true;
 }
 
 // <VAR> -> VAR <IDLIST> : <TYPE>
-bool VarLexer(string& str)
+bool VarLexer(string& str, string& errorMessage)
 {
 	bool result = false;
 
-	string lex = GetSubstring(str, " ");
-	if (lex == "VAR")
+	string lex = GetSubstring(str, SPACE);
+	if (lex == VAR)
 	{
-		lex = str.substr(lex.length(), str.find(":") - lex.length());
-		str = str.substr(str.find(":") + 2);
+		if (str.find(COLON) == str.npos)
+		{
+			errorMessage = Errors[COLON];
+			return false;
+		}
 
-		if (IDListLexer(lex) && TypeLexer(str))
+		lex = str.substr(lex.length() + 1, str.find(COLON) - 1 - lex.length());
+		str = str.substr(str.find(COLON) + 1);
+
+		if (IDListLexer(lex, errorMessage) && TypeLexer(str, errorMessage))
 		{
 			result = true;
 		}
+	}
+	else
+	{
+		errorMessage = Errors[VAR];
 	}
 
 	return result;
 }
 
 // <PROG> -> PROG id <VAR> begin <LISTST> end
-bool ProgLexer(ifstream& input)
+bool ProgLexer(ifstream& input, string& errorMessage)
 {
 	string str;
 
-	ReadLine(input, str); //getline(input, str);
-	if (str != "PROG id")
+	ReadLine(input, str);
+	if (str != PROG)
+	{
+		errorMessage = Errors[PROG];
+		return false;
+	}
+
+	ReadLine(input, str);
+	if (!VarLexer(str, errorMessage))
 	{
 		return false;
 	}
 
 	ReadLine(input, str);
-	if (!VarLexer(str))
+	if (str != BEGIN)
+	{
+		errorMessage = Errors[BEGIN];
+		return false;
+	}
+
+	if (!ListSTLexer(input, str, errorMessage))
 	{
 		return false;
 	}
 
-	ReadLine(input, str);
-	if (str != "BEGIN")
+	if (str != END)
 	{
-		return false;
-	}
-
-	if (!ListSTLexer(input))
-	{
-		return false;
-	}
-
-	ReadLine(input, str);
-	if (str != "END")
-	{
+		errorMessage = Errors[END];
 		return false;
 	}
 
@@ -328,13 +525,15 @@ int main(int argc, char* argv[])
 
 	ofstream out("output.txt");
 
-	if (ProgLexer(input))
+	string errorMessage;
+
+	if (ProgLexer(input, errorMessage))
 	{
 		out << "Ok";
 	}
 	else
 	{
-		out << "Err";
+		out << errorMessage << endl;
 	}
 
 	return 0;
