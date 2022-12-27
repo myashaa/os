@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include <string>
 
 const std::string EMPTY_STR = "";

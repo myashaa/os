@@ -1,7 +1,6 @@
 #pragma once
 #include <map>
-
-#include "Const.h"
+#include "constants.h"
 
 std::map<std::string, std::string> Errors =
 {
@@ -10,8 +9,6 @@ std::map<std::string, std::string> Errors =
     {PROG,               "Expected 'PROG id'\n"},
     {BEGIN,              "Expected 'BEGIN'\n"},
     {END,                "Expected 'END'\n"},
-    {PLUS,               "Expected '+'\n"}, // Не используется
-    {MULTIPLY,           "Expected '*'\n"}, // Не используется
     {COLON,              "Expected ':'\n"},
     {VAR,                "Expected 'VAR'\n"},
     {DATA_TYPE,          "Expected data type 'int|float|bool|string'\n"},
