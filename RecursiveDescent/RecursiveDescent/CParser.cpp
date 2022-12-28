@@ -39,7 +39,7 @@ bool CParser::ParseProg(ifstream& input, string& errorMessage, string& str)
 
 	if (str != PROG)
 	{
-		errorMessage = Errors[PROG];
+		errorMessage = Errors.find(PROG)->second;
 		return false;
 	}
 
@@ -64,7 +64,7 @@ bool CParser::ParseBegin(ifstream& input, string& errorMessage, string& str)
 
 	if (str != BEGIN)
 	{
-		errorMessage = Errors[BEGIN];
+		errorMessage = Errors.find(BEGIN)->second;
 		return false;
 	}
 
@@ -75,7 +75,7 @@ bool CParser::ParseEnd(string& errorMessage, string& str)
 {
 	if (str != END)
 	{
-		errorMessage = Errors[END];
+		errorMessage = Errors.find(END)->second;
 		return false;
 	}
 
@@ -93,7 +93,7 @@ bool CParser::VarParser(string& str, string& errorMessage)
 	{
 		if (str.find(COLON) == str.npos)
 		{
-			errorMessage = Errors[COLON];
+			errorMessage = Errors.find(COLON)->second;
 			return false;
 		}
 
@@ -107,7 +107,7 @@ bool CParser::VarParser(string& str, string& errorMessage)
 	}
 	else
 	{
-		errorMessage = Errors[VAR];
+		errorMessage = Errors.find(VAR)->second;
 	}
 
 	return result;
@@ -134,11 +134,11 @@ bool CParser::IDListParser(string& str, string& errorMessage)
 	{
 		if (pars == ID)
 		{
-			errorMessage = Errors[COMMA];
+			errorMessage = Errors.find(COMMA)->second;
 		}
 		else
 		{
-			errorMessage = Errors[ID];
+			errorMessage = Errors.find(ID)->second;
 		}
 	}
 
@@ -153,7 +153,7 @@ bool CParser::TypeParser(string& str, string& errorMessage)
 	}
 	else
 	{
-		errorMessage = Errors[SEMICOLON];
+		errorMessage = Errors.find(SEMICOLON)->second;
 		return false;
 	}
 
@@ -165,7 +165,7 @@ bool CParser::TypeParser(string& str, string& errorMessage)
 	}
 	else
 	{
-		errorMessage = Errors[DATA_TYPE];
+		errorMessage = Errors.find(DATA_TYPE)->second;
 	}
 
 	str = EMPTY_STR;
@@ -186,13 +186,13 @@ bool CParser::ListSTParser(ifstream& input, string& str, string& errorMessage)
 				return true;
 			}
 
-			errorMessage = Errors[FUNCTIONS];
+			errorMessage = Errors.find(FUNCTIONS)->second;
 			return false;
 		}
 
 		if (str.find(SEMICOLON) == str.npos)
 		{
-			errorMessage = Errors[SEMICOLON];
+			errorMessage = Errors.find(SEMICOLON)->second;
 			return false;
 		}
 
@@ -231,7 +231,7 @@ bool CParser::STParser(string const& str, string& errorMessage)
 
 	if (errorMessage.empty())
 	{
-		errorMessage = Errors[UNKNOWN_FUNCTION];
+		errorMessage = Errors.find(UNKNOWN_FUNCTION)->second;
 	}
 
 	return false;
@@ -258,7 +258,7 @@ bool CParser::AssignParser(string& str, string& errorMessage)
 
 	if (pars != ID)
 	{
-		errorMessage = Errors[ID];
+		errorMessage = Errors.find(ID)->second;
 		return false;
 	}
 
@@ -278,7 +278,7 @@ bool CParser::AssignParser(string& str, string& errorMessage)
 	}
 	else
 	{
-		errorMessage = Errors[EQUAL];
+		errorMessage = Errors.find(EQUAL)->second;
 	}
 
 	if (result == true)
@@ -368,7 +368,7 @@ bool CParser::FParser(string& str, string& errorMessage)
 
 	if (result == false)
 	{
-		errorMessage = Errors[UNKNOWN_EXPRESSION];
+		errorMessage = Errors.find(UNKNOWN_EXPRESSION)->second;
 	}
 
 	return result;
@@ -387,7 +387,7 @@ bool CParser::OperationParser(string const& operation, string& str, string& erro
 		// Проверяем, что следующий символ - открывающая скобка.
 		if (!CLineHandler::IsOperationHaveOpenBracket(str, pars))
 		{
-			errorMessage = Errors[OPEN_BRACKET_STR];
+			errorMessage = Errors.find(OPEN_BRACKET_STR)->second;
 			return false;
 		}
 
@@ -396,7 +396,7 @@ bool CParser::OperationParser(string const& operation, string& str, string& erro
 		// Если закрывающей скобки не обнаружено, выбрасываем ошибку.
 		if (str.find(CLOSE_BRACKET_STR) == str.npos)
 		{
-			errorMessage = Errors[CLOSE_BRACKET_STR];
+			errorMessage = Errors.find(CLOSE_BRACKET_STR)->second;
 			return false;
 		}
 
@@ -411,7 +411,7 @@ bool CParser::OperationParser(string const& operation, string& str, string& erro
 			// Если после закрывающей скобки есть что-то кроме ';' выкидываем ошибку.
 			if (str.length() > 1)
 			{
-				errorMessage = Errors[SEMICOLON];
+				errorMessage = Errors.find(SEMICOLON)->second;
 				result = false;
 			}
 		}

@@ -1,5 +1,4 @@
-﻿#include <fstream>
-#include "CParser.h"
+﻿#include "CParser.h"
 
 using namespace std;
 

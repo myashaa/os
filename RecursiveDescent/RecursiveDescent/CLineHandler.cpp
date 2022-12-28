@@ -51,7 +51,7 @@ bool CLineHandler::IsCorrectBrackets(string const& str, string& errorMessage)
 		{
 			if (brackets.empty())
 			{
-				errorMessage = Errors[OPEN_BRACKET_STR];
+				errorMessage = Errors.find(OPEN_BRACKET_STR)->second;
 				return false;
 			}
 
@@ -61,7 +61,7 @@ bool CLineHandler::IsCorrectBrackets(string const& str, string& errorMessage)
 
 	if (!brackets.empty())
 	{
-		errorMessage = Errors[CLOSE_BRACKET_STR];
+		errorMessage = Errors.find(CLOSE_BRACKET_STR)->second;
 	}
 
 	return brackets.empty();

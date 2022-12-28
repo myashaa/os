@@ -2,7 +2,7 @@
 #include <map>
 #include "constants.h"
 
-std::map<std::string, std::string> Errors =
+const std::map<std::string, std::string> Errors =
 {
     {ID,                 "Expected 'id'\n"},
     {FUNCTIONS,          "Expected operation 'READ|WRITE|ASSIGN'\n"},
