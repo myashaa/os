@@ -1,52 +1,80 @@
 #include "CHandler.h"
 
-void CHandler::InitializeArr(vector<Rule>& arr)
+using namespace std;
+
+void CHandler::RemoveExtraSpaces(string& str)
 {
-    arr.push_back(Rule('S', { '8', '3', 'a', 'b', '-', '(' }, false, true, 1, false, false));
-    arr.push_back(Rule('E', { '8', '3', 'a', 'b', '-', '(' }, false, true, 3, true, false));
-    arr.push_back(Rule('\0', { '\0' }, true, true, -1, false, true));
-    arr.push_back(Rule('E', { '8', '3', 'a', 'b', '-', '(' }, false, true, 4, false, false));
-    arr.push_back(Rule('T', { '8', '3', 'a', 'b', '-', '(' }, false, true, 14, true, false));
-    arr.push_back(Rule('A', { ')', '+', '\0' }, false, true, 6, false, false));
-    arr.push_back(Rule('A', { ')' }, false, false, 10, false, false));
-    arr.push_back(Rule('A', { '+' }, false, false, 11, false, false));
-    arr.push_back(Rule('A', { '\0' }, false, true, 9, false, false));
-    arr.push_back(Rule('\0', { '\0' }, false, true, -1, false, false));
-    arr.push_back(Rule(')', { ')' }, false, true, -1, false, false));
-    arr.push_back(Rule('+', { '+' }, true, true, 12, false, false));
-    arr.push_back(Rule('T', { '8', '3', 'a', 'b', '-', '(' }, false, true, 14, true, false));
-    arr.push_back(Rule('A', { ')', '+', '\0' }, false, true, 6, false, false));
-    arr.push_back(Rule('T', { '8', '3', 'a', 'b', '-', '(' }, false, true, 15, false, false));
-    arr.push_back(Rule('F', { '8', '3', 'a', 'b', '-', '(' }, false, true, 27, true, false));
-    arr.push_back(Rule('B', { '*', ')', '+', '\0' }, false, true, 17, false, false));
-    arr.push_back(Rule('B', { '*' }, false, false, 24, false, false));
-    arr.push_back(Rule('B', { ')' }, false, false, 22, false, false));
-    arr.push_back(Rule('B', { '+' }, false, false, 23, false, false));
-    arr.push_back(Rule('B', { '\0' }, false, true, 21, false, false));
-    arr.push_back(Rule('\0', { '\0' }, false, true, -1, false, false));
-    arr.push_back(Rule(')', { ')' }, false, true, -1, false, false));
-    arr.push_back(Rule('+', { '+' }, false, true, -1, false, false));
-    arr.push_back(Rule('*', { '*' }, true, true, 25, false, false));
-    arr.push_back(Rule('F', { '8', '3', 'a', 'b', '-', '(' }, false, true, 27, true, false));
-    arr.push_back(Rule('B', { '*', ')', '+', '\0' }, false, true, 17, false, false));
-    arr.push_back(Rule('F', { '8' }, false, false, 33, false, false));
-    arr.push_back(Rule('F', { '3' }, false, false, 34, false, false));
-    arr.push_back(Rule('F', { 'a' }, false, false, 35, false, false));
-    arr.push_back(Rule('F', { 'b' }, false, false, 36, false, false));
-    arr.push_back(Rule('F', { '-' }, false, false, 37, false, false));
-    arr.push_back(Rule('F', { '(' }, false, true, 39, false, false));
-    arr.push_back(Rule('8', { '8' }, true, true, -1, false, false));
-    arr.push_back(Rule('3', { '3' }, true, true, -1, false, false));
-    arr.push_back(Rule('a', { 'a' }, true, true, -1, false, false));
-    arr.push_back(Rule('b', { 'b' }, true, true, -1, false, false));
-    arr.push_back(Rule('-', { '-' }, true, true, 38, false, false));
-    arr.push_back(Rule('F', { '8', '3', 'a', 'b', '-', '(' }, false, true, 27, false, false));
-    arr.push_back(Rule('(', { '(' }, true, true, 40, false, false));
-    arr.push_back(Rule('E', { '8', '3', 'a', 'b', '-', '(' }, false, true, 3, true, false));
-    arr.push_back(Rule(')', { ')' }, true, true, -1, false, false));
+    size_t begin = str.find_first_not_of(' ');
+    size_t length = str.find_last_not_of(' ') - begin;
+
+    if (begin == str.npos)
+    {
+        begin = 0;
+    }
+
+    str = str.substr(begin, length + 1);
 }
 
-bool CHandler::CompareLine(vector<Rule> const& arr, string line)
+string CHandler::ReadStringPart(string& str, char separator)
+{
+    string part = str.substr(0, str.find(separator));
+
+    str = str.substr(part.size());
+
+    RemoveExtraSpaces(str);
+
+    return part;
+}
+
+void CHandler::InitializeArr(ifstream& table, vector<Rule>& arr)
+{
+    arr.clear();
+
+    string row;
+    while (getline(table, row))
+    {
+        char term = row[0];
+
+        string strPart = row.substr(row.find('{') + 1, row.find('}') - row.find('{') - 1);
+        vector<char> guidChars;
+
+        for (size_t i = 0; i < strPart.size(); i++)
+        {
+            char ch = strPart[i];
+
+            if (ch != ',' && ch != ' ')
+            {
+                if (ch == '.')
+                {
+                    ch = '\0';
+                }
+
+                guidChars.push_back(ch);
+            }
+        }
+
+        row = row.substr(row.find('}') + 2);
+
+        strPart = ReadStringPart(row, ' ');
+        bool shift = (strPart == "true");
+
+        strPart = ReadStringPart(row, ' ');
+        bool error = (strPart == "true");
+
+        strPart = ReadStringPart(row, ' ');
+        int ptrNext = stoi(strPart);
+
+        strPart = ReadStringPart(row, ' ');
+        bool isNextInStack = (strPart == "true");
+
+        strPart = ReadStringPart(row, ' ');
+        bool isEnd = (strPart == "true");
+
+        arr.push_back(Rule(term, guidChars, shift, error, ptrNext, isNextInStack, isEnd));
+    }
+}
+
+bool CHandler::CompareLine(vector<Rule> const& arr, string const& line)
 {
     stack<int> nextStep;
     bool isSuccess = true;

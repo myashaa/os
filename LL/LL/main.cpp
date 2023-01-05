@@ -3,11 +3,11 @@
 int main(int argc, char* argv[])
 {
     ifstream input(argv[1]);
-
+    ifstream table("table.txt");
     ofstream out("output.txt");
 
     vector<Rule> arr;
-    CHandler::InitializeArr(arr);
+    CHandler::InitializeArr(table, arr);
 
     string line;
     while (getline(input, line))

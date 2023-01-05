@@ -10,6 +10,10 @@ using namespace std;
 class CHandler
 {
 public:
-    void static InitializeArr(vector<Rule>& arr);
-    bool static CompareLine(vector<Rule> const& arr, string line);
+    void static InitializeArr(std::ifstream& table, std::vector<Rule>& arr);
+    bool static CompareLine(std::vector<Rule> const& arr, std::string const& line);
+
+private:
+    string static ReadStringPart(string& str, char separator);
+    void static RemoveExtraSpaces(string& str);
 };
